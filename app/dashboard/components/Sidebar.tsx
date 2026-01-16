@@ -24,6 +24,8 @@ interface SidebarProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
   onCreateProject: () => void;
+  isCollapsed: boolean;
+  onCollapseChange: (collapsed: boolean) => void;
 }
 
 const navItems = [
@@ -33,9 +35,15 @@ const navItems = [
   { id: 'profile', label: 'Profile', icon: FiUser },
 ];
 
-export default function Sidebar({ user, activeTab, onTabChange, onCreateProject }: SidebarProps) {
+export default function Sidebar({
+  user,
+  activeTab,
+  onTabChange,
+  onCreateProject,
+  isCollapsed,
+  onCollapseChange,
+}: SidebarProps) {
   const { logout } = useAuth();
-  const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   const getInitials = (name: string) => {
@@ -80,11 +88,11 @@ export default function Sidebar({ user, activeTab, onTabChange, onCreateProject 
                 onTabChange(item.id);
                 setIsMobileOpen(false);
               }}
-              className={`group relative flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-all duration-200 ${
+              className={`group relative flex w-full items-center rounded-xl px-3 py-3 text-left transition-all duration-300 ease-out ${
                 isActive
                   ? 'bg-[#B19EEF]/15 text-[#B19EEF]'
                   : 'text-gray-400 hover:bg-white/5 hover:text-white'
-              }`}
+              } ${isCollapsed ? 'justify-center' : 'gap-3'}`}
             >
               <Icon size={22} className={isActive ? 'text-[#B19EEF]' : ''} />
               {!isCollapsed && (
@@ -108,7 +116,9 @@ export default function Sidebar({ user, activeTab, onTabChange, onCreateProject 
             onCreateProject();
             setIsMobileOpen(false);
           }}
-          className="mt-4 flex w-full items-center gap-3 rounded-xl bg-gradient-to-r from-[#B19EEF] to-[#8B7BD4] px-3 py-3 font-semibold text-[#0a0a0f] transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:shadow-[#B19EEF]/25"
+          className={`mt-4 flex w-full items-center rounded-xl bg-gradient-to-r from-[#B19EEF] to-[#8B7BD4] px-3 py-3 font-semibold text-[#0a0a0f] transition-all duration-300 ease-out hover:scale-[1.02] hover:shadow-lg hover:shadow-[#B19EEF]/25 ${
+            isCollapsed ? 'justify-center' : 'gap-3'
+          }`}
         >
           <FiPlusSquare size={22} />
           {!isCollapsed && <span>Add Project</span>}
@@ -116,7 +126,7 @@ export default function Sidebar({ user, activeTab, onTabChange, onCreateProject 
       </nav>
 
       {/* User Section */}
-      <div className="border-t border-white/5 p-3">
+      <div className="border-t border-white/5 p-3 space-y-3">
         <div className={`flex items-center gap-3 rounded-xl p-2 ${isCollapsed ? 'justify-center' : ''}`}>
           <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#B19EEF] to-[#8B7BD4] text-sm font-semibold text-[#0a0a0f]">
             {user.avatar ? (
@@ -184,7 +194,7 @@ export default function Sidebar({ user, activeTab, onTabChange, onCreateProject 
 
       {/* Desktop Sidebar */}
       <aside
-        className={`hidden md:flex fixed left-0 top-0 h-full flex-col bg-[#0a0a0f] border-r border-white/5 transition-all duration-300 ${
+        className={`hidden md:flex fixed left-0 top-0 h-full flex-col bg-[#0a0a0f] border-r border-white/5 transition-[width] duration-300 ease-out ${
           isCollapsed ? 'w-20' : 'w-64'
         }`}
       >
@@ -192,7 +202,7 @@ export default function Sidebar({ user, activeTab, onTabChange, onCreateProject 
         
         {/* Collapse Toggle - Sleek pill button */}
         <button
-          onClick={() => setIsCollapsed(!isCollapsed)}
+          onClick={() => onCollapseChange(!isCollapsed)}
           className="absolute -right-4 top-1/2 -translate-y-1/2 group"
         >
           <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#B19EEF]/10 border border-[#B19EEF]/20 text-[#B19EEF] transition-all duration-300 hover:bg-[#B19EEF]/20 hover:scale-110 hover:shadow-lg hover:shadow-[#B19EEF]/20">

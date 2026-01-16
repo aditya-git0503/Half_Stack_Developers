@@ -234,6 +234,7 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState('explore');
   const [currentSort, setCurrentSort] = useState('match');
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   // Redirect to home if not authenticated
   useEffect(() => {
@@ -343,11 +344,21 @@ export default function DashboardPage() {
         activeTab={activeTab}
         onTabChange={setActiveTab}
         onCreateProject={handleCreateProject}
+        isCollapsed={isSidebarCollapsed}
+        onCollapseChange={setIsSidebarCollapsed}
       />
 
       {/* Main Content */}
-      <main className="relative z-10 md:ml-64 min-h-screen transition-all duration-300">
-        <div className="px-4 py-8 md:px-8 pt-16 md:pt-8 max-w-7xl">
+      <main
+        className={`relative z-10 min-h-screen transition-all duration-300 ${
+          isSidebarCollapsed ? 'md:ml-20' : 'md:ml-64'
+        }`}
+      >
+        <div
+          className={`px-4 py-8 md:px-8 pt-16 md:pt-8 w-full ${
+            isSidebarCollapsed ? 'max-w-none' : 'max-w-7xl'
+          }`}
+        >
           {/* Page Header */}
           <div className="mb-6">
             <h1 className="text-3xl font-bold text-white md:text-4xl">
