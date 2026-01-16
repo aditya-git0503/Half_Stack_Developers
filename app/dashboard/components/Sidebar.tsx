@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { 
   FiCompass, 
   FiPlusSquare, 
@@ -33,6 +34,7 @@ const navItems = [
 ];
 
 export default function Sidebar({ user, activeTab, onTabChange, onCreateProject }: SidebarProps) {
+  const { logout } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
@@ -45,9 +47,8 @@ export default function Sidebar({ user, activeTab, onTabChange, onCreateProject 
       .slice(0, 2);
   };
 
-  const handleLogout = () => {
-    console.log('Logging out...');
-    window.location.href = '/';
+  const handleLogout = async () => {
+    await logout();
   };
 
   const SidebarContent = () => (

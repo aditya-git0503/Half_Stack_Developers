@@ -1,12 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 import Sidebar from './components/Sidebar';
 import ProjectGrid from './components/ProjectGrid';
 import ProjectDetailModal from './components/ProjectDetailModal';
 import FilterSortBar from './components/FilterSortBar';
 import SearchPeople from './components/SearchPeople';
 import Notifications from './components/Notifications';
+import { FiLoader } from 'react-icons/fi';
 
 // Project type definition
 interface Project {
@@ -28,6 +31,7 @@ interface Project {
   timeline?: string;
   stage?: string;
   createdAt?: string;
+  createdTimestamp?: number;
 }
 
 // Mock data - replace with real API calls later
@@ -45,12 +49,13 @@ const mockProjects: Project[] = [
       year: '3rd Year',
     },
     tags: ['React Native', 'Sustainability', 'Mobile', 'Firebase'],
-    matchReason: "You both have experience in React, and Pragya's focus on gamification aligns with your game dev background. Your Python skills complement her frontend expertise.",
+    matchReason: "You both have experience in React, and Pragya's focus on gamification aligns with your background.",
     teamSize: 2,
     maxTeamSize: 5,
     timeline: '3 months',
     stage: 'Ideation',
     createdAt: '2 days ago',
+    createdTimestamp: Date.now() - 2 * 24 * 60 * 60 * 1000,
   },
   {
     id: '2',
@@ -65,12 +70,13 @@ const mockProjects: Project[] = [
       year: '4th Year',
     },
     tags: ['Python', 'AI/ML', 'EdTech', 'TensorFlow'],
-    matchReason: "Your machine learning coursework and Python proficiency make you an ideal fit. Rahul needs someone who can build recommendation algorithms.",
+    matchReason: "Your machine learning coursework and Python proficiency make you an ideal fit.",
     teamSize: 1,
     maxTeamSize: 4,
     timeline: '2 months',
     stage: 'MVP',
     createdAt: '1 week ago',
+    createdTimestamp: Date.now() - 7 * 24 * 60 * 60 * 1000,
   },
   {
     id: '3',
@@ -85,12 +91,13 @@ const mockProjects: Project[] = [
       year: '2nd Year',
     },
     tags: ['Node.js', 'React', 'Marketplace', 'Stripe'],
-    matchReason: "Ananya has the business model figured out but needs technical co-founders. Your full-stack experience could help ship the MVP fast.",
+    matchReason: "Ananya has the business model figured out but needs technical co-founders.",
     teamSize: 3,
     maxTeamSize: 6,
     timeline: '4 months',
     stage: 'Prototype',
     createdAt: '3 days ago',
+    createdTimestamp: Date.now() - 3 * 24 * 60 * 60 * 1000,
   },
   {
     id: '4',
@@ -105,12 +112,13 @@ const mockProjects: Project[] = [
       year: '4th Year',
     },
     tags: ['Django', 'IoT', 'B2B', 'PostgreSQL'],
-    matchReason: "Your interest in IoT projects and Django experience matches perfectly. Vikram has domain expertise and lab connections.",
+    matchReason: "Your interest in IoT projects and Django experience matches perfectly.",
     teamSize: 2,
     maxTeamSize: 4,
     timeline: '6 months',
     stage: 'Ideation',
     createdAt: '5 days ago',
+    createdTimestamp: Date.now() - 5 * 24 * 60 * 60 * 1000,
   },
   {
     id: '5',
@@ -125,12 +133,13 @@ const mockProjects: Project[] = [
       year: '3rd Year',
     },
     tags: ['Next.js', 'NLP', 'HealthTech', 'WebSocket'],
-    matchReason: "Your Next.js skills and interest in meaningful projects align well. Sneha brings clinical knowledge and user research.",
+    matchReason: "Your Next.js skills and interest in meaningful projects align well.",
     teamSize: 1,
     maxTeamSize: 5,
     timeline: '3 months',
-    stage: 'Research',
+    stage: 'Ideation',
     createdAt: '1 day ago',
+    createdTimestamp: Date.now() - 1 * 24 * 60 * 60 * 1000,
   },
   {
     id: '6',
@@ -145,12 +154,13 @@ const mockProjects: Project[] = [
       year: '3rd Year',
     },
     tags: ['WebRTC', 'React', 'Node.js', 'Monaco Editor'],
-    matchReason: "Your experience with real-time applications and React makes you a perfect fit. Arjun needs help building the collaborative editor.",
+    matchReason: "Your experience with real-time applications and React makes you a perfect fit.",
     teamSize: 1,
     maxTeamSize: 4,
     timeline: '4 months',
     stage: 'MVP',
     createdAt: '4 days ago',
+    createdTimestamp: Date.now() - 4 * 24 * 60 * 60 * 1000,
   },
   {
     id: '7',
@@ -165,12 +175,13 @@ const mockProjects: Project[] = [
       year: '2nd Year',
     },
     tags: ['Flutter', 'Firebase', 'Razorpay', 'Events'],
-    matchReason: "Your mobile development skills and interest in event tech align well. Kavya has connections with multiple college fest committees.",
+    matchReason: "Your mobile development skills and interest in event tech align well.",
     teamSize: 2,
     maxTeamSize: 5,
     timeline: '3 months',
     stage: 'Prototype',
     createdAt: '1 week ago',
+    createdTimestamp: Date.now() - 7 * 24 * 60 * 60 * 1000,
   },
   {
     id: '8',
@@ -185,28 +196,104 @@ const mockProjects: Project[] = [
       year: 'Professor',
     },
     tags: ['Python', 'NLP', 'Academic', 'Matching'],
-    matchReason: "Your NLP coursework and interest in academic tools is exactly what Dr. Iyer needs for the matching algorithm.",
+    matchReason: "Your NLP coursework and interest in academic tools is exactly what's needed.",
     teamSize: 1,
     maxTeamSize: 3,
     timeline: '5 months',
     stage: 'Ideation',
     createdAt: '2 days ago',
+    createdTimestamp: Date.now() - 2 * 24 * 60 * 60 * 1000,
   },
 ];
 
-// Mock user data
-const mockUser = {
-  name: 'Chirag',
-  email: 'chirag@iiits.in',
-  avatar: null,
+// Role filter mapping
+const roleFilterMapping: Record<string, string[]> = {
+  frontend: ['Frontend Dev', 'UI Designer'],
+  backend: ['Backend Dev', 'DevOps'],
+  ml: ['ML Engineer', 'AI Engineer'],
+  mobile: ['Mobile Dev'],
+  design: ['UI Designer'],
+  fullstack: ['Full Stack Dev'],
+};
+
+// Stage filter mapping
+const stageFilterMapping: Record<string, string> = {
+  ideation: 'Ideation',
+  mvp: 'MVP',
+  prototype: 'Prototype',
+  launched: 'Launched',
 };
 
 export default function DashboardPage() {
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
+  
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('explore');
   const [currentSort, setCurrentSort] = useState('match');
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
+
+  // Redirect to home if not authenticated
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/');
+    }
+  }, [user, authLoading, router]);
+
+  // Filter and sort projects - MUST be before any conditional returns
+  const filteredAndSortedProjects = useMemo(() => {
+    let result = [...mockProjects];
+
+    // Apply filters
+    if (activeFilters.length > 0) {
+      const roleFilters = activeFilters.filter(f => roleFilterMapping[f]);
+      const stageFilters = activeFilters.filter(f => stageFilterMapping[f]);
+
+      result = result.filter((project) => {
+        // Check role filters
+        const matchesRole = roleFilters.length === 0 || roleFilters.some((filter) => {
+          const roles = roleFilterMapping[filter];
+          return project.missingRoles.some((role) => 
+            roles.some((r) => role.toLowerCase().includes(r.toLowerCase()))
+          );
+        });
+
+        // Check stage filters
+        const matchesStage = stageFilters.length === 0 || stageFilters.some((filter) => {
+          return project.stage?.toLowerCase() === stageFilterMapping[filter].toLowerCase();
+        });
+
+        return matchesRole && matchesStage;
+      });
+    }
+
+    // Apply sorting
+    result.sort((a, b) => {
+      switch (currentSort) {
+        case 'match':
+          return b.compatibilityScore - a.compatibilityScore;
+        case 'recent':
+          return (b.createdTimestamp || 0) - (a.createdTimestamp || 0);
+        case 'trending':
+          // Trending = combination of match score and recency
+          const aScore = a.compatibilityScore * 0.6 + (a.createdTimestamp || 0) / Date.now() * 40;
+          const bScore = b.compatibilityScore * 0.6 + (b.createdTimestamp || 0) / Date.now() * 40;
+          return bScore - aScore;
+        default:
+          return 0;
+      }
+    });
+
+    return result;
+  }, [activeFilters, currentSort]);
+
+  // Create user data from Firebase auth (without profile photo - using initials)
+  const userData = user ? {
+    name: user.displayName || user.email?.split('@')[0] || 'User',
+    email: user.email || '',
+    avatar: null, // Don't use photoURL, show initials instead
+  } : null;
 
   const handleProjectClick = (project: Project) => {
     setSelectedProject(project);
@@ -223,12 +310,19 @@ export default function DashboardPage() {
     console.log('Create project clicked');
   };
 
-  // Sort projects
-  const sortedProjects = [...mockProjects].sort((a, b) => {
-    if (currentSort === 'match') return b.compatibilityScore - a.compatibilityScore;
-    if (currentSort === 'recent') return 0; // Would sort by date in real app
-    return 0;
-  });
+  // Show loading while auth is checking
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
+        <FiLoader className="w-8 h-8 text-[#B19EEF] animate-spin" />
+      </div>
+    );
+  }
+
+  // Don't render if not authenticated
+  if (!user || !userData) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] font-['Inter',sans-serif]">
@@ -244,7 +338,7 @@ export default function DashboardPage() {
 
       {/* Sidebar */}
       <Sidebar 
-        user={mockUser}
+        user={userData}
         activeTab={activeTab}
         onTabChange={setActiveTab}
         onCreateProject={handleCreateProject}
@@ -266,7 +360,7 @@ export default function DashboardPage() {
               {activeTab === 'profile' && 'My Profile'}
             </h1>
             <p className="mt-2 text-gray-500">
-              {activeTab === 'explore' && 'Discover projects looking for someone like you'}
+              {activeTab === 'explore' && `${filteredAndSortedProjects.length} projects looking for someone like you`}
               {activeTab === 'search' && 'Find collaborators across departments'}
               {activeTab === 'notifications' && 'Stay updated on your matches'}
               {activeTab === 'profile' && 'Manage your skills and preferences'}
@@ -283,7 +377,7 @@ export default function DashboardPage() {
                 onFilterChange={setActiveFilters}
               />
               <ProjectGrid 
-                projects={sortedProjects} 
+                projects={filteredAndSortedProjects} 
                 onProjectClick={handleProjectClick} 
               />
             </>
