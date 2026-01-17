@@ -308,15 +308,14 @@ export default function DashboardPage() {
   };
 
   const handleCreateProject = () => {
-    // TODO: Open create project modal
-    console.log('Create project clicked');
+    router.push('/dashboard/add-project');
   };
 
   // Show loading while auth is checking
   if (authLoading) {
     return (
       <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
-        <FiLoader className="w-8 h-8 text-[#B19EEF] animate-spin" />
+        <FiLoader className="w-8 h-8 text-[#B19EEF] animate-spin" suppressHydrationWarning />
       </div>
     );
   }
