@@ -6,7 +6,6 @@ import {
   FiCompass, 
   FiPlusSquare, 
   FiSearch, 
-  FiBell, 
   FiUser,
   FiLogOut,
   FiMenu,
@@ -31,7 +30,6 @@ const navItems = [
   { id: 'explore', label: 'Explore', icon: FiCompass },
   { id: 'meetups', label: 'Meetups', icon: FiClock },
   { id: 'search', label: 'Search People', icon: FiSearch },
-  { id: 'notifications', label: 'Notifications', icon: FiBell, badge: 3 },
   { id: 'profile', label: 'Profile', icon: FiUser },
 ];
 
@@ -92,11 +90,6 @@ export default function Sidebar({
             >
               <Icon size={22} className={isActive ? 'text-[#B19EEF]' : ''} />
               <span className="font-medium">{item.label}</span>
-              {item.badge && (
-                <span className="absolute right-3 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#B19EEF] px-1.5 text-xs font-bold text-[#0a0a0f]">
-                  {item.badge}
-                </span>
-              )}
               {isActive && (
                 <div className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-[#B19EEF]" />
               )}

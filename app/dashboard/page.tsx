@@ -11,10 +11,8 @@ import ProjectGrid from './components/ProjectGrid';
 import ProjectDetailModal from './components/ProjectDetailModal';
 import FilterSortBar from './components/FilterSortBar';
 import SearchPeople from './components/SearchPeople';
-import Notifications from './components/Notifications';
 import MyProfile from './components/MyProfile';
 import Meetups from './components/Meetups';
-import Schedule from './components/Schedule';
 import { FiLoader } from 'react-icons/fi';
 
 // Project type definition (matches your UI)
@@ -112,7 +110,9 @@ export default function DashboardPage() {
           });
         });
 
-        setProjects(fetchedProjects);
+        // Filter out current user's own projects
+        const filteredProjects = fetchedProjects.filter(p => p.ownerId !== user.uid);
+        setProjects(filteredProjects);
       } catch (err: any) {
         console.error('Failed to fetch projects:', err);
         setError('Failed to load projects. Please try again.');
@@ -248,7 +248,6 @@ export default function DashboardPage() {
                 </span>
               )}
               {activeTab === 'search' && 'Search People'}
-              {activeTab === 'notifications' && 'Notifications'}
               {activeTab === 'profile' && 'My Profile'}
             </h1>
             <p className="mt-2 text-gray-500">
@@ -256,7 +255,6 @@ export default function DashboardPage() {
                 `${filteredAndSortedProjects.length} projects looking for someone like you`}
               {activeTab === 'meetups' && 'Your upcoming and completed meetups'}
               {activeTab === 'search' && 'Find collaborators across departments'}
-              {activeTab === 'notifications' && 'Stay updated on your matches'}
               {activeTab === 'profile' && 'Manage your skills and preferences'}
             </p>
           </div>
@@ -286,21 +284,12 @@ export default function DashboardPage() {
           )}
 
           {activeTab === 'meetups' && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
-              {/* Meetups Section - 2/3 width, natural height */}
-              <div className="lg:col-span-2 border border-[#333333] rounded-xl p-5 bg-[#0f0f14]/40 backdrop-blur-sm">
-                <Meetups />
-              </div>
-
-              {/* Schedule Section - 1/3 width, stretches to match left, scrolls inside */}
-              <div className="lg:col-span-1">
-                <Schedule />
-              </div>
+            <div className="border border-[#333333] rounded-xl p-5 bg-[#0f0f14]/40 backdrop-blur-sm">
+              <Meetups />
             </div>
           )}
 
           {activeTab === 'search' && <SearchPeople />}
-          {activeTab === 'notifications' && <Notifications />}
           {activeTab === 'profile' && <MyProfile user={userData} />}
         </div>
       </main>

@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { FiSearch, FiFilter, FiMapPin, FiCode, FiStar, FiUserPlus } from 'react-icons/fi';
 import { db } from '@/lib/firebase-client';
 import { collection, getDocs, query } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
 
 interface Person {
   id: string;
@@ -45,6 +46,10 @@ export default function SearchPeople() {
         setLoading(true);
         setError(null);
 
+        // Get current user's UID to filter them out
+        const auth = getAuth();
+        const currentUid = auth.currentUser?.uid;
+
         const q = query(collection(db, 'users'));
         const querySnapshot = await getDocs(q);
 
@@ -52,6 +57,9 @@ export default function SearchPeople() {
         querySnapshot.forEach((doc) => {
           const data = doc.data();
           if (!data.email?.includes('@')) return;
+          
+          // Filter out the current user from search results
+          if (doc.id === currentUid) return;
 
           const matchScore = Math.floor(Math.random() * 25) + 75;
 

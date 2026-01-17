@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FiCalendar, FiClock, FiMapPin, FiCheckCircle, FiZap, FiUsers, FiCoffee, FiLoader } from 'react-icons/fi';
+import { FiCalendar, FiClock, FiMapPin, FiCheckCircle, FiZap, FiUsers, FiCoffee, FiLoader, FiInbox, FiCheck, FiX } from 'react-icons/fi';
 import { db } from '@/lib/firebase-client';
-import { collection, query, where, getDocs, or, orderBy, doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, or, orderBy, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 
 interface Meetup {
@@ -13,7 +13,10 @@ interface Meetup {
   person: string;
   location: string;
   projectName: string;
-  status: 'pending' | 'completed';
+  status: 'pending' | 'completed' | 'accepted' | 'declined';
+  isIncomingRequest?: boolean;
+  proposerUid?: string;
+  recipientUid?: string;
 }
 
 interface MeetupCardProps {
@@ -97,6 +100,9 @@ export default function Meetups() {
             ? data.recipientUid 
             : data.proposerUid;
 
+          // Check if this is an incoming request (user is recipient and status is pending)
+          const isIncomingRequest = data.recipientUid === uid && data.status === 'pending';
+
           // Fetch real name from users collection
           const userDoc = await getDoc(doc(db, 'users', otherUid));
           const otherName = userDoc.exists() ? userDoc.data().name || 'Unknown' : 'Unknown';
@@ -118,6 +124,9 @@ export default function Meetups() {
             location: data.campusSpot === 'library' ? 'Library' : 'Central Cafe',
             projectName: data.projectName || data.projectname || 'Untitled Project',
             status: data.status || 'pending',
+            isIncomingRequest,
+            proposerUid: data.proposerUid,
+            recipientUid: data.recipientUid,
           });
         }
 
@@ -134,8 +143,26 @@ export default function Meetups() {
     fetchMeetups();
   }, []);
 
-  const pendingMeetups = meetups.filter(m => m.status === 'pending');
+  // Separate incoming requests from confirmed meetups
+  const incomingRequests = meetups.filter(m => m.isIncomingRequest);
+  const pendingMeetups = meetups.filter(m => m.status === 'pending' && !m.isIncomingRequest);
+  const acceptedMeetups = meetups.filter(m => m.status === 'accepted');
   const completedMeetups = meetups.filter(m => m.status === 'completed');
+
+  // Handle accepting/declining requests
+  const handleRequestAction = async (meetupId: string, action: 'accepted' | 'declined') => {
+    try {
+      await updateDoc(doc(db, 'meetups', meetupId), { status: action });
+      // Update local state
+      setMeetups(prev => prev.map(m => 
+        m.id === meetupId 
+          ? { ...m, status: action, isIncomingRequest: false }
+          : m
+      ));
+    } catch (err) {
+      console.error('Failed to update request:', err);
+    }
+  };
 
   if (loading) {
     return (
@@ -157,10 +184,17 @@ export default function Meetups() {
   return (
     <div className="space-y-6">
       {/* Summary Stats */}
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
+        {incomingRequests.length > 0 && (
+          <div className="flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-sm">
+            <FiInbox size={14} className="text-amber-400" />
+            <span className="text-amber-400 font-medium">{incomingRequests.length}</span>
+            <span className="text-gray-400">pending requests</span>
+          </div>
+        )}
         <div className="flex items-center gap-2 rounded-full border border-[#B19EEF]/30 bg-[#B19EEF]/10 px-3 py-1.5 text-sm">
           <FiCalendar size={14} className="text-[#B19EEF]" />
-          <span className="text-[#B19EEF] font-medium">{pendingMeetups.length}</span>
+          <span className="text-[#B19EEF] font-medium">{pendingMeetups.length + acceptedMeetups.length}</span>
           <span className="text-gray-400">upcoming</span>
         </div>
         <div className="flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-sm">
@@ -170,6 +204,60 @@ export default function Meetups() {
         </div>
       </div>
 
+      {/* Pending Requests Section */}
+      {incomingRequests.length > 0 && (
+        <div>
+          <div className="mb-3 flex items-center gap-2 text-white">
+            <FiInbox size={16} className="text-amber-400" />
+            <h3 className="font-semibold">Pending Requests</h3>
+          </div>
+          <div className="flex gap-3 overflow-x-auto pb-2">
+            {incomingRequests.map(request => (
+              <div key={request.id} className="group flex-shrink-0 w-[280px] rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 transition-all hover:border-amber-500/40">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-amber-500/20 text-amber-400 font-semibold text-sm">
+                    {request.person.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-white font-medium truncate">{request.person}</p>
+                    <p className="text-xs text-amber-400 truncate">{request.projectName}</p>
+                    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-400">
+                      <span className="flex items-center gap-1">
+                        <FiCalendar size={11} className="text-gray-500" />
+                        {request.date}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <FiClock size={11} className="text-gray-500" />
+                        {request.time}
+                      </span>
+                    </div>
+                    <div className="mt-1 flex items-center gap-1 text-xs text-gray-500">
+                      <FiMapPin size={11} />
+                      <span className="truncate">{request.location}</span>
+                    </div>
+                    {/* Accept/Decline buttons */}
+                    <div className="mt-3 flex gap-2">
+                      <button
+                        onClick={() => handleRequestAction(request.id, 'accepted')}
+                        className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 text-xs font-medium hover:bg-emerald-500/30 transition-colors"
+                      >
+                        <FiCheck size={12} /> Accept
+                      </button>
+                      <button
+                        onClick={() => handleRequestAction(request.id, 'declined')}
+                        className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg bg-red-500/20 text-red-400 text-xs font-medium hover:bg-red-500/30 transition-colors"
+                      >
+                        <FiX size={12} /> Decline
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Upcoming */}
       <div>
         <div className="mb-3 flex items-center gap-2 text-white">
@@ -177,8 +265,8 @@ export default function Meetups() {
           <h3 className="font-semibold">Upcoming</h3>
         </div>
         <div className="flex gap-3 overflow-x-auto pb-2">
-          {pendingMeetups.length > 0 ? (
-            pendingMeetups.map(meetup => (
+          {(pendingMeetups.length > 0 || acceptedMeetups.length > 0) ? (
+            [...acceptedMeetups, ...pendingMeetups].map(meetup => (
               <MeetupCard key={meetup.id} meetup={meetup} />
             ))
           ) : (
