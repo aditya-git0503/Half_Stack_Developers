@@ -276,7 +276,8 @@ export default function MyProfile({ user }: MyProfileProps) {
                         type="text"
                         value={profile.department}
                         onChange={(e) => setProfile({ ...profile, department: e.target.value })}
-                        className="w-40 rounded border border-white/10 bg-white/5 px-2 py-0.5 text-sm outline-none focus:border-[#B19EEF]/50"
+                        placeholder="Add your branch"
+                        className="w-40 rounded border border-white/10 bg-white/5 px-2 py-0.5 text-sm outline-none placeholder:text-gray-600 focus:border-[#B19EEF]/50"
                       />
                     ) : (
                       profile.department
