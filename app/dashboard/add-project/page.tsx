@@ -91,6 +91,12 @@ export default function AddProjectPage() {
   const [formError, setFormError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/');
+    }
+  }, [authLoading, user, router]);
+
   const filteredRoleSuggestions = useMemo(() => {
     if (!roleInput.trim()) return [];
     return roleSuggestions
@@ -106,12 +112,6 @@ export default function AddProjectPage() {
       .filter((tech) => tech.toLowerCase().includes(techInput.trim().toLowerCase()))
       .slice(0, 8);
   }, [techInput, techStack]);
-
-  useEffect(() => {
-    if (!authLoading && !user) {
-      router.push('/');
-    }
-  }, [authLoading, user, router]);
 
   const canSubmit = useMemo(() => {
     if (!title.trim() || !description.trim()) return false;
@@ -311,6 +311,7 @@ export default function AddProjectPage() {
             </label>
 
             <div className="grid gap-6 md:grid-cols-2">
+              {/* Role Gaps */}
               <div className="space-y-2">
                 <span className="text-sm font-medium text-gray-300">Role Gaps *</span>
                 <div className="relative">
@@ -360,7 +361,7 @@ export default function AddProjectPage() {
                     </div>
                   )}
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 pt-1">
                   {roleGaps.map((role) => (
                     <span
                       key={role}
@@ -379,6 +380,7 @@ export default function AddProjectPage() {
                 </div>
               </div>
 
+              {/* Tech Stack */}
               <div className="space-y-2">
                 <span className="text-sm font-medium text-gray-300">Tech Stack *</span>
                 <div className="relative">
@@ -428,7 +430,7 @@ export default function AddProjectPage() {
                     </div>
                   )}
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 pt-1">
                   {techStack.map((tech) => (
                     <span
                       key={tech}
