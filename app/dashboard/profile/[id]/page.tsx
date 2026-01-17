@@ -19,7 +19,6 @@ interface UserProfile {
   github?: string;
   linkedin?: string;
   portfolio?: string;
-  projectsJoined?: number;
 }
 
 export default function ProfilePage() {
@@ -58,7 +57,6 @@ export default function ProfilePage() {
           github: data.github || '',
           linkedin: data.linkedin || '',
           portfolio: data.portfolio || '',
-          projectsJoined: data.projectsJoined || 0,
         });
       } catch (err: any) {
         console.error('Failed to fetch profile:', err);
@@ -166,10 +164,6 @@ export default function ProfilePage() {
 
               {/* Stats */}
               <div className="mt-4 flex gap-6">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-white">{profile.projectsJoined}</div>
-                  <div className="text-sm text-gray-500">Projects</div>
-                </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-white">{profile.skills.length}</div>
                   <div className="text-sm text-gray-500">Skills</div>

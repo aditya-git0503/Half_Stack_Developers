@@ -4,11 +4,23 @@
 import { useState, useEffect } from 'react';
 import { 
   FiEdit2, FiPlus, FiX, FiGithub, FiLinkedin, FiGlobe,
-  FiMail, FiCalendar, FiBookOpen, FiAward, FiCode, FiSave
+  FiMail, FiCalendar, FiBookOpen, FiAward, FiCode, FiSave, FiExternalLink
 } from 'react-icons/fi';
 import { getAuth } from 'firebase/auth';
 import { db } from '@/lib/firebase-client';
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, collection, getDocs, query, where } from 'firebase/firestore';
+
+interface UserProject {
+  id: string;
+  title: string;
+  description: string;
+  status: string;
+  stage: string;
+  techStack: string[];
+  roleGaps: string[];
+  currentMembers: number;
+  totalMembers: number;
+}
 
 interface UserProfile {
   name: string;
@@ -23,8 +35,6 @@ interface UserProfile {
   github?: string;
   linkedin?: string;
   portfolio?: string;
-  projectsJoined?: number;
-  connectionsCount?: number;
 }
 
 interface MyProfileProps {
@@ -49,15 +59,17 @@ export default function MyProfile({ user }: MyProfileProps) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [myProjects, setMyProjects] = useState<UserProject[]>([]);
 
-  // Fetch or create profile
+  // Fetch or create profile and fetch user's projects
   useEffect(() => {
-    const fetchProfile = async () => {
+    const fetchProfileAndProjects = async () => {
       try {
         const auth = getAuth();
         const uid = auth.currentUser?.uid;
         if (!uid) throw new Error('User not logged in');
 
+        // Fetch user profile
         const userDoc = await getDoc(doc(db, 'users', uid));
         let data: UserProfile;
 
@@ -76,8 +88,6 @@ export default function MyProfile({ user }: MyProfileProps) {
             github: '',
             linkedin: '',
             portfolio: '',
-            projectsJoined: 0,
-            connectionsCount: 0,
           };
           await setDoc(doc(db, 'users', uid), {
             ...data,
@@ -99,12 +109,31 @@ export default function MyProfile({ user }: MyProfileProps) {
             github: docData.github || '',
             linkedin: docData.linkedin || '',
             portfolio: docData.portfolio || '',
-            projectsJoined: docData.projectsJoined || 0,
-            connectionsCount: docData.connectionsCount || 0,
           };
         }
 
         setProfile(data);
+
+        // Fetch user's projects
+        const projectsQuery = query(collection(db, 'projects'), where('ownerId', '==', uid));
+        const projectsSnapshot = await getDocs(projectsQuery);
+        const projects: UserProject[] = [];
+        projectsSnapshot.forEach((doc) => {
+          const projectData = doc.data();
+          projects.push({
+            id: doc.id,
+            title: projectData.title || 'Untitled Project',
+            description: projectData.description || '',
+            status: projectData.status || 'open',
+            stage: projectData.currentprojectstage || 'Idea',
+            techStack: projectData.Techstack || [],
+            roleGaps: projectData.roleGaps || [],
+            currentMembers: projectData.currentnumberofmembers || 1,
+            totalMembers: projectData.totalnumberofmembers || 1,
+          });
+        });
+        setMyProjects(projects);
+
         setError(null);
       } catch (err: any) {
         console.error('Profile error:', err);
@@ -114,7 +143,7 @@ export default function MyProfile({ user }: MyProfileProps) {
       }
     };
 
-    fetchProfile();
+    fetchProfileAndProjects();
   }, [user]);
 
   const handleSave = async () => {
@@ -305,7 +334,7 @@ export default function MyProfile({ user }: MyProfileProps) {
 
             <div className="mt-4 flex gap-6">
               <div className="text-center">
-                <div className="text-2xl font-bold text-white">{profile.projectsJoined}</div>
+                <div className="text-2xl font-bold text-white">{myProjects.length}</div>
                 <div className="text-sm text-gray-500">Projects</div>
               </div>
               <div className="text-center">
@@ -496,6 +525,93 @@ export default function MyProfile({ user }: MyProfileProps) {
             </button>
           </div>
         </div>
+      </div>
+
+      {/* My Projects Section */}
+      <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.05] to-transparent p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-white">My Projects</h3>
+          <a 
+            href="/dashboard/add-project"
+            className="flex items-center gap-1.5 text-sm text-[#B19EEF] hover:underline"
+          >
+            <FiPlus size={14} />
+            Add Project
+          </a>
+        </div>
+        
+        {myProjects.length === 0 ? (
+          <div className="text-center py-8">
+            <div className="text-4xl mb-3">🚀</div>
+            <p className="text-gray-400 mb-4">You haven't created any projects yet</p>
+            <a 
+              href="/dashboard/add-project"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#B19EEF]/10 border border-[#B19EEF]/20 text-[#B19EEF] text-sm font-medium hover:bg-[#B19EEF]/20 transition-all"
+            >
+              <FiPlus size={16} />
+              Create Your First Project
+            </a>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {myProjects.map((project) => (
+              <div 
+                key={project.id}
+                className="p-4 rounded-xl border border-white/10 bg-white/[0.02] hover:border-[#B19EEF]/30 transition-all"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h4 className="text-white font-medium truncate">{project.title}</h4>
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                        project.status === 'open' 
+                          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                          : project.status === 'in-progress'
+                          ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                          : 'bg-gray-500/10 text-gray-400 border border-gray-500/20'
+                      }`}>
+                        {project.status}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-400 line-clamp-2 mb-3">{project.description}</p>
+                    
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {project.techStack.slice(0, 4).map((tech) => (
+                        <span 
+                          key={tech}
+                          className="px-2 py-1 rounded-lg bg-white/5 text-xs text-gray-400"
+                        >
+                          {tech}
+                        </span>
+                      ))}
+                      {project.techStack.length > 4 && (
+                        <span className="px-2 py-1 rounded-lg bg-white/5 text-xs text-gray-500">
+                          +{project.techStack.length - 4}
+                        </span>
+                      )}
+                    </div>
+                    
+                    <div className="flex items-center gap-4 text-xs text-gray-500">
+                      <span className="flex items-center gap-1">
+                        <FiCode size={12} />
+                        {project.stage}
+                      </span>
+                      <span>
+                        {project.currentMembers}/{project.totalMembers} members
+                      </span>
+                      {project.roleGaps.length > 0 && (
+                        <span className="text-[#B19EEF]">
+                          Looking for: {project.roleGaps.slice(0, 2).join(', ')}
+                          {project.roleGaps.length > 2 && ` +${project.roleGaps.length - 2}`}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
