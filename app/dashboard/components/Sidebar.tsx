@@ -61,7 +61,7 @@ export default function Sidebar({
       <div className="flex h-16 items-center px-4 border-b border-white/5">
         <a href="/dashboard" className="flex items-center gap-2">
           <div className="flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/5 overflow-hidden">
-            <img src="/ghost-collab.png" alt="Ghost Collab" className="h-full w-full object-cover object-[center_60%] scale-[2.2]" />
+            <img src="/ghost-collab.png" alt="Ghost Collab" className="h-full w-full object-cover object-[center_60%] scale-[1.2]" />
           </div>
           <span className="text-lg font-bold text-white">
             Ghost<span className="text-[#B19EEF]">Collab</span>
