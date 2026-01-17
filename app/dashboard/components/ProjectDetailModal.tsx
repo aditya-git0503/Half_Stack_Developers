@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { FiUsers, FiMail, FiCalendar, FiZap, FiClock, FiTarget, FiLayers } from 'react-icons/fi';
+import { FiUsers, FiCalendar, FiZap, FiClock, FiTarget, FiLayers } from 'react-icons/fi';
 
 interface ProjectOwner {
   name: string;
@@ -268,13 +268,6 @@ export default function ProjectDetailModal({
               >
                 <FiCalendar size={16} />
                 Request Meetup
-              </button>
-              <button
-                onClick={() => console.log('Message clicked')}
-                className="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-5 py-3 text-sm font-medium text-gray-300 transition-all duration-200 hover:bg-white/[0.06] hover:border-white/15"
-              >
-                <FiMail size={16} />
-                Message
               </button>
             </div>
           </div>

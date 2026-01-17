@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FiSearch, FiFilter, FiMapPin, FiCode, FiStar, FiMessageCircle } from 'react-icons/fi';
+import { FiSearch, FiFilter, FiMapPin, FiCode, FiStar, FiUserPlus } from 'react-icons/fi';
 import { db } from '@/lib/firebase-client';
 import { collection, getDocs, query } from 'firebase/firestore';
 
@@ -235,7 +235,7 @@ export default function SearchPeople() {
             </div>
 
             <button className="mt-4 w-full py-2.5 rounded-xl bg-[#B19EEF]/10 border border-[#B19EEF]/20 text-[#B19EEF] text-sm font-medium flex items-center justify-center gap-2 hover:bg-[#B19EEF]/20 transition-all duration-200">
-              <FiMessageCircle size={16} />
+              <FiUserPlus size={16} />
               Connect
             </button>
           </div>

@@ -66,8 +66,8 @@ export default function Sidebar({
       {/* Logo */}
       <div className="flex h-16 items-center px-4 border-b border-white/5">
         <a href="/dashboard" className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#B19EEF]/20">
-            <span className="text-lg">👻</span>
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl overflow-hidden">
+            <img src="/ghost-collab.jpg" alt="Ghost Collab" className="h-full w-full object-cover" />
           </div>
           {!isCollapsed && (
             <span className="text-lg font-bold text-white">

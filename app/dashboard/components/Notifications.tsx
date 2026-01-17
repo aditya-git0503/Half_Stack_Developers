@@ -1,11 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { FiCheck, FiX, FiMessageCircle, FiUserPlus, FiHeart, FiStar, FiBell } from 'react-icons/fi';
+import { FiCheck, FiX, FiUserPlus, FiHeart, FiStar, FiBell } from 'react-icons/fi';
 
 interface Notification {
   id: string;
-  type: 'match' | 'request' | 'message' | 'like' | 'system';
+  type: 'match' | 'request' | 'like' | 'system';
   title: string;
   description: string;
   time: string;
@@ -38,15 +38,6 @@ const mockNotifications: Notification[] = [
     senderName: 'Rahul Verma',
     projectName: 'StudySync',
     actionable: true,
-  },
-  {
-    id: '3',
-    type: 'message',
-    title: 'New Message',
-    description: '"Hey! I saw your profile and think you\'d be perfect for..."',
-    time: '3 hours ago',
-    read: false,
-    senderName: 'Ananya Patel',
   },
   {
     id: '4',
@@ -96,8 +87,6 @@ export default function Notifications() {
         return <FiStar className="text-amber-400" size={16} />;
       case 'request':
         return <FiUserPlus className="text-[#B19EEF]" size={16} />;
-      case 'message':
-        return <FiMessageCircle className="text-blue-400" size={16} />;
       case 'like':
         return <FiHeart className="text-rose-400" size={16} />;
       default:
