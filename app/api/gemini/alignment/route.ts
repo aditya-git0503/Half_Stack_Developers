@@ -77,7 +77,9 @@ export async function POST(request: NextRequest) {
     }
 
     // 6. Build content signatures used to invalidate cache when either side changes
+    const CACHE_VERSION = 'v3'; // Bumped to v3 to bypass recent tests
     const profileSignature = makeSignature({
+      version: CACHE_VERSION,
       skills: toStringArray(userProfile.skills),
       workStyle: String(userProfile.workStyle || '').trim(),
       intensity: String(userProfile.intensity || '').trim(),
@@ -112,37 +114,19 @@ export async function POST(request: NextRequest) {
     if (cacheOnly) {
       return NextResponse.json({ alignment: null });
     }
-
     // 8. Sanitize inputs for prompt (critical security step)
     const sanitize = (str: string, maxLength = 150) =>
       str?.replace(/[<>]/g, '').trim().slice(0, maxLength) || 'Not specified';
 
-    const prompt = `
-You are an expert technical matchmaker for developer projects. Analyze compatibility between a developer's profile and a project opportunity.
+    const prompt = `You are a technical matchmaker evaluating a candidate for a project.
+Please write EXACTLY ONE complete, conversational sentence explaining why the user is a great match for the project based on the data below.
 
-USER PROFILE:
-- Skills: ${sanitize(userProfile.skills?.join(', ') || '')}
-- Work Style: ${sanitize(userProfile.workStyle || '')}
-- Intensity: ${sanitize(userProfile.intensity || '')}
-- Background: ${sanitize(userProfile.department || '')}
+User Skills: ${sanitize(userProfile.skills?.join(', ') || '')}
+User Background: ${sanitize(userProfile.department || '')}
+Project Tech Stack: ${sanitize(projectData.Techstack?.join(', ') || '')}
+Roles Needed: ${sanitize(projectData.roleGaps?.join(', ') || '')}
 
-PROJECT:
-- Title: ${sanitize(projectData.title || '')}
-- Tech Stack: ${sanitize(projectData.Techstack?.join(', ') || '')}
-- Needed Roles: ${sanitize(projectData.roleGaps?.join(', ') || '')}
-- Stage: ${sanitize(projectData.currentprojectstage || '')}
-
-TASK: Write exactly 2 concise sentences (max 250 characters total):
-1. First sentence: Highlight the strongest skill/role match
-2. Second sentence: Constructively address any gap OR add encouragement
-
-RULES:
-- Be specific about matches (e.g., "Your React skills match their frontend needs")
-- Never mention names or emails
-- Never invent skills not in the profile
-- Plain text only - no markdown, quotes, or labels
-- Keep it under 250 characters total
-`;
+Explanation:`;
 
     // 9. Call Gemini API with timeout protection
     if (!process.env.GEMINI_API_KEY) {
@@ -153,19 +137,16 @@ RULES:
     try {
       const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
       
-      // Use gemini-2.5-flash - latest advanced model
       const model = genAI.getGenerativeModel({
-        model: 'gemini-2.5-flash',  // Latest advanced flash model
+        model: 'gemini-2.5-flash',
         generationConfig: {
-          maxOutputTokens: 300,  // Reduced - we only need ~250 chars
-          temperature: 0.2,      // Lower for more focused output
-          topP: 0.9,
+          temperature: 0.7,
+          topP: 0.8,
         },
       });
 
-      // Add timeout protection (8 seconds)
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 8000);
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
 
       try {
         const result = await model.generateContent(prompt, {
@@ -176,28 +157,21 @@ RULES:
         const response = await result.response;
         let alignmentText = response.text().trim();
 
-        // Smart truncation - respect sentence boundaries
+        // Clean up: remove markdown, quotes, extra spaces
         alignmentText = alignmentText
-          .replace(/[*_~`"]/g, '')  // Remove markdown
-          .replace(/\n+/g, ' ')      // Remove newlines
-          .replace(/\s+/g, ' ')      // Normalize spaces
+          .replace(/[*_~`"']/g, '')
+          .replace(/\n+/g, ' ')
+          .replace(/\s+/g, ' ')
           .trim();
 
-        // If over 280 chars, truncate at last sentence boundary (period)
-        if (alignmentText.length > 280) {
-          const truncated = alignmentText.slice(0, 280);
-          const lastPeriod = truncated.lastIndexOf('.');
-          if (lastPeriod > 100) {  // Only if we found a reasonable sentence
-            alignmentText = truncated.slice(0, lastPeriod + 1).trim();
-          } else {
-            // Fallback: just truncate with ellipsis
-            alignmentText = truncated.trim() + '...';
-          }
+        // Allow up to 250 characters, add ellipsis if it goes beyond
+        if (alignmentText.length > 250) {
+          alignmentText = alignmentText.slice(0, 247).trim() + '...';
         }
 
-        // Ensure minimum useful length
-        if (alignmentText.length < 50) {
-          alignmentText = "Great potential match! Review the project details to see where your skills align.";
+        // Fallback if response is empty or too short
+        if (alignmentText.length < 10) {
+          alignmentText = "Your skills align well with this project's requirements";
         }
 
         // Cache the result with signatures so future requests can skip Gemini if unchanged.
